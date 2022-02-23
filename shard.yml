@@ -1,0 +1,13 @@
+name: ulid
+version: 1.0.0
+
+authors:
+  - David Ellis <david@conquerthelawn.com>
+
+dependencies:
+  crockford:
+    github: davidkellis/crockford
+
+crystal: 1.3.0
+
+license: MIT
