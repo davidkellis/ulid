@@ -53,23 +53,35 @@ describe ULID do
         arr.size.should eq(len)
       end
 
-      it "should be sortable" do
+      it "should be sortable across different times" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
         1000.times do
-          ulid_1 = ULID.string
-          sleep 1.millisecond
-          ulid_2 = ULID.string
+          t2 = t + 1.millisecond
+          ulid_1 = ULID.string(t)
+          ulid_2 = ULID.string(t2)
 
           (ulid_2 > ulid_1).should be_true
+
+          t += 1.millisecond
         end
       end
 
+      it "should not be sortable across multiple invocations at the same millisecond mark" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        ulids = 1000.times.map { ULID.string(t) }.to_a
+        sorted = ulids.sort
+        ulids.should_not eq(sorted)
+      end
+
       it "should be seedable" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
         1000.times do
-          ulid_1 = ULID.string
-          sleep 1.millisecond
-          ulid_2 = ULID.string(Time.utc - 1.second)
+          ulid_1 = ULID.string(t)
+          ulid_2 = ULID.string(t - 1.second)
 
           (ulid_2 < ulid_1).should be_true
+
+          t += 1.millisecond
         end
       end
     end
@@ -106,5 +118,40 @@ describe ULID do
         5.times.map { factory.uint(t) }.to_a.should eq([1759629768772767174505897016764511964_u128, 1759629768772767174505897016764511965_u128, 1759629768772767174505897016764511966_u128, 1759629768772767174505897016764511967_u128, 1759629768772767174505897016764511968_u128] of UInt128)
       end
     end
+
+    describe "#string" do
+      it "should be sortable across different times" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          t2 = t + 1.millisecond
+          ulid_1 = ULID.monotonic_string(t)
+          ulid_2 = ULID.monotonic_string(t2)
+
+          (ulid_2 > ulid_1).should be_true
+
+          t += 1.millisecond
+        end
+      end
+
+      it "should be sortable across multiple invocations at the same millisecond mark" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        ulids = 1000.times.map { ULID.monotonic_string(t) }.to_a
+        sorted = ulids.sort
+        ulids.should eq(sorted)
+      end
+
+      it "should be seedable" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          ulid_1 = ULID.monotonic_string(t)
+          ulid_2 = ULID.monotonic_string(t - 1.second)
+
+          (ulid_2 < ulid_1).should be_true
+
+          t += 1.millisecond
+        end
+      end
+    end
   end
+
 end
