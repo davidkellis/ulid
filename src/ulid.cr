@@ -1,4 +1,30 @@
 require "crockford"
+require "uuid"
+
+# monkey patch UUID to introduce a new class method onto UUID
+struct UUID
+  def self.from_u128(u128 : UInt128, version : UUID::Version? = UUID::Version::V4, variant : UUID::Variant? = UUID::Variant::RFC4122) : UUID
+    UUID.new(UInt128.bytes(pointerof(u128)), variant, version)
+  end
+end
+
+# monkey patch UInt128 to introduce a new class method onto UInt128
+struct UInt128
+  # converts the u128 into a slice of bytes in which bytes[0] is the low-order byte of the u128 and bytes[15] is the high order byte of the u128
+  def self.bytes(u128_p : Pointer(UInt128)) : Slice(UInt8)
+    u8_p = u128_p.as(UInt8*)
+    u8_p.to_slice(16)     # bytes[0] is the low-order byte of the u128 and bytes[15] is the high order byte of the u128
+  end
+
+  # converts a slice of bytes in which bytes[0] is the low-order byte of the u128 and bytes[15] is the high order byte of the u128 back into the corresponding u128
+  def self.from_bytes(bytes : Bytes | StaticArray(UInt8, 16)) : UInt128
+    bytes.to_a.reverse.reduce(0_u128) {|acc, byte| (acc << 8) | byte }
+  end
+
+  def self.rand(random : Random = Random) : UInt128
+    random.rand(UInt64).to_u128 << 64 | random.rand(UInt64)
+  end
+end
 
 # this implements ULID generation, as defined at https://github.com/ulid/spec
 module ULID
@@ -13,12 +39,20 @@ module ULID
     @@factory.uint(seed_time)
   end
 
+  def self.uuid(seed_time : Time = Time.utc)
+    @@factory.uuid(seed_time)
+  end
+
   def self.monotonic_string(seed_time : Time = Time.utc)
     @@monotonic_factory.string(seed_time)
   end
 
   def self.monotonic_uint(seed_time : Time = Time.utc)
     @@monotonic_factory.uint(seed_time)
+  end
+
+  def self.monotonic_uuid(seed_time : Time = Time.utc)
+    @@monotonic_factory.uuid(seed_time)
   end
 
   class Factory
@@ -50,6 +84,17 @@ module ULID
       ulid
     end
 
+    @[Deprecated("Use `#uint` instead. The order of UUIDs is not well defined and universally agreeded upon, which makes it impossible to guarantee that UUID order will match the well-defined ordering of UInt128s.")]
+    def uuid(seed_time : Time = Time.utc) : UUID
+      uint_ulid = uint(seed_time)
+      # given that the binary representation of uint_ulid is:
+      # 0baaaaaaaa_bbbbbbbb_cccccccc_dddddddd_eeeeeeee_ffffffff_gggggggg_hhhhhhhh_iiiiiiii_jjjjjjjj_kkkkkkkk_llllllll_mmmmmmmm_nnnnnnnn_oooooooo_pppppppp
+      # we want to re-arrange the bits so that the timestamp portion of the ulid - aaaaaaaa_bbbbbbbb_cccccccc_dddddddd_eeeeeeee_ffffffff - is aligned with
+      # the most significant bits of a UUID, so that ordering UUIDs will match the ordering of the associated ULIDs.
+      # Update: Turns out, UUID 
+      UUID.from_u128(uint_ulid)
+    end
+
     # returns a UInt64 with the high-order 16 bits zeroed out and the low-order 48 bits representing the number of milliseconds since Unix epoch
     def gen_time(time : Time) : UInt64
       # since 2^48 milliseconds is roughly 8920 years, we know we can just drop the 16 high-order bits from this 64-bit integer,
@@ -65,7 +110,8 @@ module ULID
     end
 
     def rand128 : UInt128
-      @random.rand(UInt64).to_u128 << 64 | @random.rand(UInt64)
+      # @random.rand(UInt64).to_u128 << 64 | @random.rand(UInt64)
+      UInt128.rand(@random)
     end
   end
 

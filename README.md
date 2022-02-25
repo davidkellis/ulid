@@ -19,14 +19,20 @@ This library implements the ULID specification as defined at https://github.com/
 ```crystal
 require "ulid"
 
-ULID.string    # returns a ULID string
-ULID.uint      # returns a binary ULID, represented as a UInt128
+ULID.string    # returns a ULID represented as a String
+ULID.uint      # returns a ULID represented as a UInt128
+ULID.uuid      # returns a ULID represented as a UUID
 
 ULID.string(Time.utc(2016, 2, 15, 10, 20, 30))
 
-ULID.monotonic_string   # returns a ULID string
-ULID.monotonic_ulid     # returns a binary ULID, represented as a UInt128
+ULID.monotonic_string   # returns a ULID represented as a String
+ULID.monotonic_ulid     # returns a ULID represented as a UInt128
+ULID.monotonic_uuid     # returns a ULID represented as a UUID
 ```
+
+NOTE: The UUID representations of a ULID have less entropy in the random component of the ULID than the non-UUID representations,
+beecause the UUID representations must encode a UUID version and variant, which fixes some of the bits in the random component
+to encode the UUID's version and variant.
 
 ## Specification (per https://github.com/ulid/spec as of 2022-02-24)
 
