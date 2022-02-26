@@ -19,15 +19,26 @@ This library implements the ULID specification as defined at https://github.com/
 ```crystal
 require "ulid"
 
-puts ULID.string    # 01FWT8XW950000004082YM2F94
-puts ULID.uint      # 1989715707147923516395137553923329928
-puts ULID.uuid      # 8a8c3c97-8ce8-0000-0000-25f18e347f01
+puts ULID.string    # 01FWW2EFES00000005WZ2S1FJ4
+puts ULID.uint      # 1989788620795904033538720336259049107
+puts ULID.uuid      # 017f3827-3dd9-0000-0000-e11234e44a25
 
-puts ULID.string(Time.utc(2016, 2, 15, 10, 20, 30))     # 01ABJ747DG000000530Z7H72VP
+puts ULID.monotonic_string   # 01FWW2EFES0000003V8EMT3N0N
+puts ULID.monotonic_uint     # 1989788620795904033538533323464025266
+puts ULID.monotonic_uuid     # 017f3827-3dd9-0000-0000-2eee411f7b89
 
-puts ULID.monotonic_string   # 01FWT8XW950000002KEP3XW6BJ
-puts ULID.monotonic_ulid     # 1989715707147923516395211441527788825
-puts ULID.monotonic_uuid     # 422e4004-c4d0-0000-0000-25f18e347f01
+
+t = Time.utc
+puts t                 # 2022-02-26 22:29:30 UTC
+
+puts ULID.string(t)    # 01FWW2EFES0000005JH7TWRY67
+puts ULID.uint(t)      # 1989788620795904033538751739225489211
+puts ULID.uuid(t)      # 017f3827-3dd9-0000-0000-70b68bfe74d9
+
+puts ULID.monotonic_string(t)   # 01FWW2EFES0000002REBEWA7QP
+puts ULID.monotonic_uint(t)     # 1989788620795904033538608261870460663
+puts ULID.monotonic_uuid(t)     # 017f3827-3dd9-0000-0000-5872ddc51ef8
+
 ```
 
 ## Specification (per https://github.com/ulid/spec as of 2022-02-24)
