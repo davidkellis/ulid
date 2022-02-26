@@ -3,7 +3,17 @@ require "uuid"
 
 # monkey patch UUID to introduce a new class method onto UUID
 struct UUID
+  # Returns a UUID from a given u128
+  # NOTE: The the most significant byte of the u128 is the most significant byte (left-most byte) of the UUID,
+  #       and the least significant byte of the u128 is the least significant byte (right-most byte) of the UUID.
   def self.from_u128(u128 : UInt128, version : UUID::Version? = nil, variant : UUID::Variant? = nil) : UUID
+    UUID.new(UInt128.bytes(pointerof(u128)).reverse!, variant, version)
+  end
+
+  # Returns a UUID from a given u128
+  # NOTE: This encoding is called "inverted because the the most significant byte of the u128 is the least significant byte (right-most byte) of the UUID
+  #       and the least significant byte of the u128 is the most significant byte (left-most byte) of the UUID.
+  def self.from_u128_inverted(u128 : UInt128, version : UUID::Version? = nil, variant : UUID::Variant? = nil) : UUID
     UUID.new(UInt128.bytes(pointerof(u128)), variant, version)
   end
 end
