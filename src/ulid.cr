@@ -3,7 +3,7 @@ require "uuid"
 
 # monkey patch UUID to introduce a new class method onto UUID
 struct UUID
-  def self.from_u128(u128 : UInt128, version : UUID::Version? = UUID::Version::V4, variant : UUID::Variant? = UUID::Variant::RFC4122) : UUID
+  def self.from_u128(u128 : UInt128, version : UUID::Version? = nil, variant : UUID::Variant? = nil) : UUID
     UUID.new(UInt128.bytes(pointerof(u128)), variant, version)
   end
 end
@@ -84,14 +84,8 @@ module ULID
       ulid
     end
 
-    @[Deprecated("Use `#uint` instead. The order of UUIDs is not well defined and universally agreeded upon, which makes it impossible to guarantee that UUID order will match the well-defined ordering of UInt128s.")]
     def uuid(seed_time : Time = Time.utc) : UUID
       uint_ulid = uint(seed_time)
-      # given that the binary representation of uint_ulid is:
-      # 0baaaaaaaa_bbbbbbbb_cccccccc_dddddddd_eeeeeeee_ffffffff_gggggggg_hhhhhhhh_iiiiiiii_jjjjjjjj_kkkkkkkk_llllllll_mmmmmmmm_nnnnnnnn_oooooooo_pppppppp
-      # we want to re-arrange the bits so that the timestamp portion of the ulid - aaaaaaaa_bbbbbbbb_cccccccc_dddddddd_eeeeeeee_ffffffff - is aligned with
-      # the most significant bits of a UUID, so that ordering UUIDs will match the ordering of the associated ULIDs.
-      # Update: Turns out, UUID 
       UUID.from_u128(uint_ulid)
     end
 
