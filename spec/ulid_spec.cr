@@ -143,7 +143,7 @@ end
 describe ULID do
   describe "Factory" do
     describe "#uint" do
-      it "returns a ulid in the form of a UInt128" do
+      it "returns a ULID represented as a UInt128" do
         t = Time.utc(2016, 2, 15, 10, 20, 30)     # 1455531630000_u128 milliseconds past unix epoch
         r = Random.new(5)                         # first rand128 from this random generator should be 0b111111111000010101011001100000001010010101111111
         expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
@@ -188,7 +188,6 @@ describe ULID do
           t += 1.millisecond
         end
       end
-
     end
 
     describe "#uuid" do
@@ -327,12 +326,104 @@ describe ULID do
   end
 
   describe "MonotonicFactory" do
+    describe "#gen_rand" do
+      it "returns a random UInt128 with the high-order 48 bits zeroed out" do
+        r = Random.new(5)
+        ULID::MonotonicFactory.new(r).gen_rand(Time.utc).should eq(0b111111111000010101011001100000001010010101111111)
+      end
+    end
+
     describe "#uint" do
+      it "returns a ULID represented as a UInt128" do
+        t = Time.utc(2016, 2, 15, 10, 20, 30)     # 1455531630000_u128 milliseconds past unix epoch
+        r = Random.new(5)                         # first rand128 from this random generator should be 0b111111111000010101011001100000001010010101111111
+        expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
+        observed_u128_ulid = ULID::MonotonicFactory.new(r).uint(t)
+        observed_u128_ulid.should eq(expected_ulid)
+        observed_u128_ulid.should eq(1759629768772767174505916072544216447_u128)
+      end
+
       it "returns sequential ulids if run multiple times within the same millisecond" do
         t = Time.utc(2016, 2, 15, 10, 20, 30)     # 1455531630000_u128 milliseconds past unix epoch
         r = Random.new(5)
         factory = ULID::MonotonicFactory.new(r)
-        5.times.map { factory.uint(t) }.to_a.should eq([1759629768772767174505897016764511964_u128, 1759629768772767174505897016764511965_u128, 1759629768772767174505897016764511966_u128, 1759629768772767174505897016764511967_u128, 1759629768772767174505897016764511968_u128] of UInt128)
+        5.times.map { factory.uint(t) }.to_a.should eq([1759629768772767174505916072544216447_u128, 1759629768772767174505916072544216448_u128, 1759629768772767174505916072544216449_u128, 1759629768772767174505916072544216450_u128, 1759629768772767174505916072544216451_u128] of UInt128)
+      end
+
+      it "should be sortable across different times" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          t2 = t + 1.millisecond
+          ulid_1 = ULID.monotonic_uint(t)
+          ulid_2 = ULID.monotonic_uint(t2)
+
+          (ulid_2 > ulid_1).should be_true
+
+          t += 1.millisecond
+        end
+      end
+
+      it "should be sortable across multiple invocations at the same millisecond mark" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        ulids = 1000.times.map { ULID.monotonic_uint(t) }.to_a
+        sorted = ulids.sort
+        ulids.should eq(sorted)
+      end
+
+      it "should be seedable" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          ulid_1 = ULID.monotonic_uint(t)
+          ulid_2 = ULID.monotonic_uint(t - 1.second)
+
+          (ulid_2 < ulid_1).should be_true
+
+          t += 1.millisecond
+        end
+      end
+    end
+
+    describe "#uuid" do
+      it "returns a ULID represented as a UUID" do
+        t = Time.utc(2016, 2, 15, 10, 20, 30)     # 1455531630000_u128 milliseconds past unix epoch
+        r = Random.new(5)                         # first rand128 from this random generator should be 0b111111111000010101011001100000001010010101111111
+        expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
+        expected_uuid = UUID.from_u128(expected_ulid)
+        ULID::MonotonicFactory.new(r).uuid(t).should eq(expected_uuid)
+      end
+
+      it "should be sortable across different times" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          t2 = t + 1.millisecond
+          ulid_1 = ULID.monotonic_uuid(t)
+          ulid_2 = ULID.monotonic_uuid(t2)
+
+          (ulid_2 > ulid_1).should be_true
+          (ulid_2.to_s > ulid_1.to_s).should be_true
+
+          t += 1.millisecond
+        end
+      end
+
+      it "should be sortable across multiple invocations at the same millisecond mark" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        ulids = 1000.times.map { ULID.monotonic_uuid(t) }.to_a
+        sorted = ulids.sort
+        ulids.should eq(sorted)
+      end
+
+      it "should be seedable" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          ulid_1 = ULID.monotonic_uuid(t)
+          ulid_2 = ULID.monotonic_uuid(t - 1.second)
+
+          (ulid_2 < ulid_1).should be_true
+          (ulid_2.to_s < ulid_1.to_s).should be_true
+
+          t += 1.millisecond
+        end
       end
     end
 

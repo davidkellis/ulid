@@ -114,7 +114,6 @@ module ULID
     end
 
     def rand128 : UInt128
-      # @random.rand(UInt64).to_u128 << 64 | @random.rand(UInt64)
       UInt128.rand(@random)
     end
   end
@@ -123,11 +122,13 @@ module ULID
     @prev_time : Time
     @prev_rand : UInt128
 
-    def initialize(@random = Random.new)
+    def initialize(random = Random.new)
+      super(random)
       @prev_time = Time.utc(1970, 1, 1, 0, 0, 1)
-      @prev_rand = rand128()
+      @prev_rand = 0_u128
     end
 
+    # returns a random UInt128 with the high-order 48 bits zeroed out
     def gen_rand(seed_time : Time) : UInt128
       new_rand = if seed_time == @prev_time
         @prev_rand + 1
