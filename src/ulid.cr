@@ -1,40 +1,6 @@
 require "crockford"
+require "extlib"
 require "uuid"
-
-# monkey patch UUID to introduce a new class method onto UUID
-struct UUID
-  # Returns a UUID from a given u128
-  # NOTE: The the most significant byte of the u128 is the most significant byte (left-most byte) of the UUID,
-  #       and the least significant byte of the u128 is the least significant byte (right-most byte) of the UUID.
-  def self.from_u128(u128 : UInt128, version : UUID::Version? = nil, variant : UUID::Variant? = nil) : UUID
-    UUID.new(UInt128.bytes(pointerof(u128)).reverse!, variant, version)
-  end
-
-  # Returns a UUID from a given u128
-  # NOTE: This encoding is called "inverted because the the most significant byte of the u128 is the least significant byte (right-most byte) of the UUID
-  #       and the least significant byte of the u128 is the most significant byte (left-most byte) of the UUID.
-  def self.from_u128_inverted(u128 : UInt128, version : UUID::Version? = nil, variant : UUID::Variant? = nil) : UUID
-    UUID.new(UInt128.bytes(pointerof(u128)), variant, version)
-  end
-end
-
-# monkey patch UInt128 to introduce a new class method onto UInt128
-struct UInt128
-  # converts the u128 into a slice of bytes in which bytes[0] is the low-order byte of the u128 and bytes[15] is the high order byte of the u128
-  def self.bytes(u128_p : Pointer(UInt128)) : Slice(UInt8)
-    u8_p = u128_p.as(UInt8*)
-    u8_p.to_slice(16)     # bytes[0] is the low-order byte of the u128 and bytes[15] is the high order byte of the u128
-  end
-
-  # converts a slice of bytes in which bytes[0] is the low-order byte of the u128 and bytes[15] is the high order byte of the u128 back into the corresponding u128
-  def self.from_bytes(bytes : Bytes | StaticArray(UInt8, 16)) : UInt128
-    bytes.to_a.reverse.reduce(0_u128) {|acc, byte| (acc << 8) | byte }
-  end
-
-  def self.rand(random : Random = Random) : UInt128
-    random.rand(UInt64).to_u128 << 64 | random.rand(UInt64)
-  end
-end
 
 # this implements ULID generation, as defined at https://github.com/ulid/spec
 module ULID
