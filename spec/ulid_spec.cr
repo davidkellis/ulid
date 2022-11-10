@@ -28,6 +28,7 @@ describe ULID do
     end
   end
 
+
   describe "Factory" do
     describe "#uint" do
       it "returns a ULID represented as a UInt128" do
@@ -60,6 +61,54 @@ describe ULID do
       it "should not be sortable across multiple invocations at the same millisecond mark" do
         t = Time.utc(2001, 1, 1, 12, 0, 0)
         ulids = 1000.times.map { ULID.uint(t) }.to_a
+        sorted = ulids.sort
+        ulids.should_not eq(sorted)
+      end
+
+      it "should be seedable" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          ulid_1 = ULID.uint(t)
+          ulid_2 = ULID.uint(t - 1.second)
+
+          (ulid_2 < ulid_1).should be_true
+
+          t += 1.millisecond
+        end
+      end
+    end
+
+    describe "#ulid" do
+      it "returns a ULID represented as a ULID object" do
+        t = Time.utc(2016, 2, 15, 10, 20, 30)     # 1455531630000_u128 milliseconds past unix epoch
+        r = Random.new(5)                         # first rand128 from this random generator should be 0b111111111000010101011001100000001010010101111111
+        expected_ulid = ULID.new(1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111)
+        ULID::Factory.new(r).ulid(t).should eq(expected_ulid)
+      end
+
+      it "returns random ulids if run multiple times within the same millisecond" do
+        t = Time.utc(2016, 2, 15, 10, 20, 30)     # 1455531630000_u128 milliseconds past unix epoch
+        r = Random.new(5)
+        factory = ULID::Factory.new(r)
+        5.times.map { factory.ulid(t) }.to_a.should eq(([1759629768772767174505916072544216447_u128, 1759629768772767174505897016764511964_u128, 1759629768772767174505895313516421663_u128, 1759629768772767174505780691930843447_u128, 1759629768772767174505885374298214181_u128] of UInt128).map{|i| ULID.new(i) })
+      end
+
+      it "should be sortable across different times" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        1000.times do
+          t2 = t + 1.millisecond
+          ulid_1 = ULID.ulid(t)
+          ulid_2 = ULID.ulid(t2)
+
+          (ulid_2 > ulid_1).should be_true
+
+          t += 1.millisecond
+        end
+      end
+
+      it "should not be sortable across multiple invocations at the same millisecond mark" do
+        t = Time.utc(2001, 1, 1, 12, 0, 0)
+        ulids = 1000.times.map { ULID.ulid(t) }.to_a
         sorted = ulids.sort
         ulids.should_not eq(sorted)
       end
