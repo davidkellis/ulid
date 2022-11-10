@@ -1,6 +1,33 @@
 require "./spec_helper"
 
 describe ULID do
+  describe "#to_i" do
+    it "returns the UInt128 that it was initialized with" do
+      expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
+      ulid = ULID.new(expected_ulid)
+      ulid.to_i.should eq(expected_ulid)
+    end
+  end
+
+  describe "#to_s" do
+    it "returns the crockford encoded representation of the UInt128 that it was initialized with, left-padded with zeros out to 26 characters" do
+      expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
+      expected_ulid_string = Crockford.encode(expected_ulid).rjust(26, '0')
+      ulid = ULID.new(expected_ulid)
+      ulid.to_s.should eq(expected_ulid_string)
+      ulid.to_s.size.should eq(26)
+    end
+  end
+
+  describe "#to_uuid" do
+    it "returns the UUID encoded representation of the UInt128 that it was initialized with" do
+      expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
+      expected_ulid_uuid = UUID.from_u128(expected_ulid)
+      ulid = ULID.new(expected_ulid)
+      ulid.to_uuid.should eq(expected_ulid_uuid)
+    end
+  end
+
   describe "Factory" do
     describe "#uint" do
       it "returns a ULID represented as a UInt128" do
