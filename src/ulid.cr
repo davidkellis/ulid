@@ -130,6 +130,10 @@ class ULID
   # Between #hash and #==, we can use ULID objects as values in Hashes
   def_hash @value
 
+  def self.new(value : String)
+    new(Crockford.decode128(value))
+  end
+
   def initialize(@value : UInt128)
   end
 
@@ -146,7 +150,7 @@ class ULID
   end
 
   # implementing <=> and including Comparable will give us == for free
-  def <=>(other_ulid : ULID)
-    @value <=> other_ulid.value
+  def <=>(other : ULID)
+    @value <=> other.value
   end
 end

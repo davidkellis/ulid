@@ -1,6 +1,18 @@
 require "./spec_helper"
 
 describe ULID do
+  it "builds a ULID from a string representation of the ULID" do
+    expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
+
+    ulid = ULID.new(expected_ulid)
+    ulid2 = ULID.new(ulid.to_s)
+
+    ulid.should eq(ulid2)
+    ulid2.should eq(ulid)
+
+    ulid.to_i.should eq(ulid2.to_i)
+end
+
   describe "#to_i" do
     it "returns the UInt128 that it was initialized with" do
       expected_ulid = 1455531630000_u128 << 80 | 0b111111111000010101011001100000001010010101111111
