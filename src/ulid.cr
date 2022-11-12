@@ -141,8 +141,8 @@ class ULID
     @value
   end
 
-  def to_s
-    Crockford.encode(@value).rjust(26, '0')
+  def to_s(io : IO) : Nil
+    io << Crockford.encode(@value).rjust(26, '0')
   end
 
   def to_uuid
