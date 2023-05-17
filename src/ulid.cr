@@ -134,6 +134,10 @@ class ULID
     new(Crockford.decode128(value))
   end
 
+  def self.new(uuid : UUID)
+    new(uuid.to_u128)
+  end
+
   def initialize(@value : UInt128)
   end
 
